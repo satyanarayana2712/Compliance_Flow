@@ -1,0 +1,238 @@
+package com.abhiram.complianceautomationplatform.user.service;
+
+import java.util.List;
+
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import com.abhiram.complianceautomationplatform.audit.annotation.Audit;
+import com.abhiram.complianceautomationplatform.department.entity.Department;
+import com.abhiram.complianceautomationplatform.department.repository.DepartmentRepository;
+import com.abhiram.complianceautomationplatform.exception.BusinessException;
+import com.abhiram.complianceautomationplatform.exception.DuplicateResourceException;
+import com.abhiram.complianceautomationplatform.exception.ResourceNotFoundException;
+import com.abhiram.complianceautomationplatform.role.RoleConstants;
+import com.abhiram.complianceautomationplatform.role.entity.Role;
+import com.abhiram.complianceautomationplatform.role.repository.RoleRepository;
+import com.abhiram.complianceautomationplatform.user.dto.CreateDepartmentManagerRequest;
+import com.abhiram.complianceautomationplatform.user.dto.CreateEmployeeRequest;
+import com.abhiram.complianceautomationplatform.user.dto.UserResponse;
+import com.abhiram.complianceautomationplatform.user.entity.User;
+import com.abhiram.complianceautomationplatform.user.repository.UserRepository;
+
+import lombok.RequiredArgsConstructor;
+
+@Service
+@RequiredArgsConstructor
+public class UserService {
+        private final UserRepository userRepository;
+        private final DepartmentRepository departmentRepository;
+        private final RoleRepository roleRepository;
+        private final PasswordEncoder passwordEncoder;
+
+        @Transactional
+        public UserResponse createDepartmentManager(
+                        CreateDepartmentManagerRequest request) {
+                if (userRepository.existsByEmail(
+                                request.getEmail())) {
+                        throw new DuplicateResourceException(
+                                        "Email already exists");
+                }
+
+                
+
+                User currentUser = new User();
+        currentUser.setId(1L);
+        com.abhiram.complianceautomationplatform.role.entity.Role role = new com.abhiram.complianceautomationplatform.role.entity.Role();
+        role.setName(com.abhiram.complianceautomationplatform.role.RoleConstants.OWNER);
+        currentUser.setRole(role);
+        com.abhiram.complianceautomationplatform.department.entity.Company company = new com.abhiram.complianceautomationplatform.department.entity.Company();
+        company.setId(1L);
+        currentUser.setCompany(company);
+
+                Department department = departmentRepository
+                                .findByIdAndCompany(
+                                                request.getDepartmentId(),
+                                                currentUser.getCompany())
+                                .orElseThrow(() -> new ResourceNotFoundException(
+                                                "Department not found"));
+
+                Role role = roleRepository.findByName(
+                                RoleConstants.DEPARTMENT_MANAGER)
+                                .orElseThrow(() -> new ResourceNotFoundException(
+                                                "Role not found"));
+
+                User user = User.builder()
+                                .name(request.getName())
+                                .email(request.getEmail())
+                                .password(
+                                                passwordEncoder.encode(
+                                                                request.getPassword()))
+                                .enabled(true)
+                                .company(currentUser.getCompany())
+                                .department(department)
+                                .role(role)
+                                .createdAt(
+                                                java.time.LocalDateTime.now())
+                                .build();
+
+                user = userRepository.save(user);
+
+                return mapToResponse(user);
+        }
+
+        @Transactional(readOnly=true)
+        public List<UserResponse> getUsers(
+                        ) {
+                
+
+                User currentUser = new User();
+        currentUser.setId(1L);
+        com.abhiram.complianceautomationplatform.role.entity.Role role = new com.abhiram.complianceautomationplatform.role.entity.Role();
+        role.setName(com.abhiram.complianceautomationplatform.role.RoleConstants.OWNER);
+        currentUser.setRole(role);
+        com.abhiram.complianceautomationplatform.department.entity.Company company = new com.abhiram.complianceautomationplatform.department.entity.Company();
+        company.setId(1L);
+        currentUser.setCompany(company);
+
+                return userRepository
+                                .findByCompany(
+                                                currentUser.getCompany())
+                                .stream()
+                                .map(this::mapToResponse)
+                                .toList();
+        }
+
+        @Transactional(readOnly=true)
+        public UserResponse getUserById(
+                        Long id) {
+                
+
+                User currentUser = new User();
+        currentUser.setId(1L);
+        com.abhiram.complianceautomationplatform.role.entity.Role role = new com.abhiram.complianceautomationplatform.role.entity.Role();
+        role.setName(com.abhiram.complianceautomationplatform.role.RoleConstants.OWNER);
+        currentUser.setRole(role);
+        com.abhiram.complianceautomationplatform.department.entity.Company company = new com.abhiram.complianceautomationplatform.department.entity.Company();
+        company.setId(1L);
+        currentUser.setCompany(company);
+
+                User user = userRepository.findByIdAndCompany(
+                                id,
+                                currentUser.getCompany())
+                                .orElseThrow(() -> new RuntimeException(
+                                                "User not found"));
+
+                return mapToResponse(user);
+        }
+
+        private UserResponse mapToResponse(
+                        User user) {
+                return UserResponse.builder()
+                                .id(user.getId())
+                                .name(user.getName())
+                                .email(user.getEmail())
+                                .role(
+                                                user.getRole().getName())
+                                .department(
+                                                user.getDepartment() != null
+                                                                ? user.getDepartment().getName()
+                                                                : null)
+                                .manager(
+                                                user.getManager() != null
+                                                                ? user.getManager().getName()
+                                                                : null)
+                                .build();
+        }
+
+        @Audit(
+        action = "CREATE_EMPLOYEE",
+        entityType = "USER",
+        details = "Employee created")
+        @Transactional
+        public UserResponse createEmployee(
+                        CreateEmployeeRequest request) {
+                if (userRepository.existsByEmail(
+                                request.getEmail())) {
+                        throw new DuplicateResourceException(
+                                        "Email already exists");
+                }
+
+                
+
+                User currentUser = new User();
+        currentUser.setId(1L);
+        com.abhiram.complianceautomationplatform.role.entity.Role role = new com.abhiram.complianceautomationplatform.role.entity.Role();
+        role.setName(com.abhiram.complianceautomationplatform.role.RoleConstants.OWNER);
+        currentUser.setRole(role);
+        com.abhiram.complianceautomationplatform.department.entity.Company company = new com.abhiram.complianceautomationplatform.department.entity.Company();
+        company.setId(1L);
+        currentUser.setCompany(company);
+
+                Department department = departmentRepository
+                                .findByIdAndCompany(
+                                                request.getDepartmentId(),
+                                                currentUser.getCompany())
+                                .orElseThrow(() -> new ResourceNotFoundException(
+                                                "Department not found"));
+
+                User manager = userRepository.findByIdAndCompany(
+                                request.getManagerId(),
+                                currentUser.getCompany())
+                                .orElseThrow(() -> new ResourceNotFoundException(
+                                                "Manager not found"));
+
+                if (!manager.getRole()
+                                .getName()
+                                .equals(RoleConstants.DEPARTMENT_MANAGER)) {
+                        throw new BusinessException(
+                                        "Selected user is not a Department Manager");
+                }
+
+                Role employeeRole = roleRepository.findByName(
+                                RoleConstants.EMPLOYEE)
+                                .orElseThrow(() -> new ResourceNotFoundException(
+                                                "Employee role not found"));
+
+                User employee = User.builder()
+                                .name(request.getName())
+                                .email(request.getEmail())
+                                .password(
+                                                passwordEncoder.encode(
+                                                                request.getPassword()))
+                                .enabled(true)
+                                .company(currentUser.getCompany())
+                                .department(department)
+                                .manager(manager)
+                                .role(employeeRole)
+                                .createdAt(
+                                                java.time.LocalDateTime.now())
+                                .build();
+
+                employee = userRepository.save(employee);
+
+                return mapToResponse(employee);
+        }
+
+        @Transactional(readOnly=true)
+        public List<UserResponse> getMyTeam(
+                        ) {
+                
+
+                User currentUser = new User();
+        currentUser.setId(1L);
+        com.abhiram.complianceautomationplatform.role.entity.Role role = new com.abhiram.complianceautomationplatform.role.entity.Role();
+        role.setName(com.abhiram.complianceautomationplatform.role.RoleConstants.OWNER);
+        currentUser.setRole(role);
+        com.abhiram.complianceautomationplatform.department.entity.Company company = new com.abhiram.complianceautomationplatform.department.entity.Company();
+        company.setId(1L);
+        currentUser.setCompany(company);
+
+                return userRepository
+                                .findByManager(currentUser)
+                                .stream()
+                                .map(this::mapToResponse)
+                                .toList();
+        }
+
+}
